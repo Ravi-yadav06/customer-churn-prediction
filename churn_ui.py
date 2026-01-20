@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
 
-API_URL = "https://churn-api.onrender.com/predict"  # 👈 YOUR FASTAPI URL
+API_URL = "https://churn-api-p183.onrender.com/predict"
+
 
 st.title("📊 Customer Churn Prediction")
 
