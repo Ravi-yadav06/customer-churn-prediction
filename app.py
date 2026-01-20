@@ -3,23 +3,18 @@ import pickle
 import pandas as pd
 from pydantic import BaseModel
 
-# Initialize FastAPI
 app = FastAPI()
 
-# Load saved encoder (ColumnTransformer)
-with open("encoder.pkl", "rb") as file:
-    encoder = pickle.load(file)
+with open("encoder.pkl", "rb") as f:
+    encoder = pickle.load(f)
 
-# Load trained XGBoost model
-with open("xgboost_model.pkl", "rb") as file:
-    model = pickle.load(file)
+with open("xgboost_model.pkl", "rb") as f:
+    model = pickle.load(f)
 
-# Load threshold
-with open("threshold.pkl", "rb") as file:
-    threshold = pickle.load(file)
+with open("threshold.pkl", "rb") as f:
+    threshold = pickle.load(f)
 
 
-# Input Schema
 class ChurnInput(BaseModel):
     gender: str
     SeniorCitizen: int
@@ -43,18 +38,19 @@ class ChurnInput(BaseModel):
 
 
 @app.get("/")
-def home():
-    return {"message": "Customer Churn Prediction API is running"}
+def health():
+    return {"status": "API is running"}
 
 
 @app.post("/predict")
-def predict_churn(data: ChurnInput):
-    input_df = pd.DataFrame([data.dict()])
-    transformed_input = encoder.transform(input_df)
-    prob = model.predict_proba(transformed_input)[0][1].item()
+def predict(data: ChurnInput):
+    df = pd.DataFrame([data.dict()])
+    encoded = encoder.transform(df)
+    prob = model.predict_proba(encoded)[0][1]
     pred = int(prob >= threshold)
+
     return {
         "churn_prediction": pred,
-        "churn_probability": round(prob, 3),
-        "threshold_used": float(threshold)  # Also convert threshold if NumPy
+        "churn_probability": round(float(prob), 3),
+        "threshold_used": float(threshold)
     }

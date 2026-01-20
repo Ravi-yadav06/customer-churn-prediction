@@ -1,16 +1,15 @@
 import streamlit as st
 import requests
 
-# App title
-st.title("📊 Customer Churn Prediction System")
-st.write("Enter customer details below:")
+API_URL = "https://churn-api.onrender.com/predict"  # 👈 YOUR FASTAPI URL
 
-# Inputs
+st.title("📊 Customer Churn Prediction")
+
 gender = st.selectbox("Gender", ["Male", "Female"])
 SeniorCitizen = st.selectbox("Senior Citizen", [0, 1])
 Partner = st.selectbox("Partner", ["Yes", "No"])
 Dependents = st.selectbox("Dependents", ["Yes", "No"])
-tenure = st.number_input("Tenure (months)", min_value=0, max_value=100, value=1)
+tenure = st.number_input("Tenure", 0, 100, 1)
 
 PhoneService = st.selectbox("Phone Service", ["Yes", "No"])
 MultipleLines = st.selectbox("Multiple Lines", ["Yes", "No", "No phone service"])
@@ -35,13 +34,11 @@ PaymentMethod = st.selectbox(
     ]
 )
 
-MonthlyCharges = st.number_input("Monthly Charges", min_value=0.0, value=50.0)
-TotalCharges = st.number_input("Total Charges", min_value=0.0, value=50.0)
+MonthlyCharges = st.number_input("Monthly Charges", 0.0, value=50.0)
+TotalCharges = st.number_input("Total Charges", 0.0, value=50.0)
 
-# Predict button
 if st.button("Predict Churn"):
-
-    input_data = {
+    payload = {
         "gender": gender,
         "SeniorCitizen": SeniorCitizen,
         "Partner": Partner,
@@ -64,36 +61,16 @@ if st.button("Predict Churn"):
     }
 
     try:
-        response = requests.post(
-            "http://127.0.0.1:8000/predict",
-            json=input_data,
-            timeout=10
-        )
+        res = requests.post(API_URL, json=payload, timeout=10)
+        result = res.json()
 
-        if response.status_code == 200:
-            result = response.json()
+        st.success(f"Churn Probability: {result['churn_probability']}")
 
-            churn_prob = result.get("churn_probability")
-            churn_pred = result.get("churn_prediction")
-            threshold = result.get("threshold_used")
-
-            if churn_prob is None or churn_pred is None:
-                st.error("Unexpected API response format")
-                st.write(result)
-            else:
-                st.success(f"🔢 Churn Probability: **{churn_prob}**")
-
-                if churn_pred == 1:
-                    st.error("⚠️ Prediction: CUSTOMER WILL CHURN")
-                else:
-                    st.success("✅ Prediction: CUSTOMER WILL NOT CHURN")
-
-                st.caption(f"Threshold Used: {threshold}")
-
+        if result["churn_prediction"] == 1:
+            st.error("⚠️ Customer WILL churn")
         else:
-            st.error(f"API Error: {response.status_code}")
-            st.write(response.text)
+            st.success("✅ Customer will NOT churn")
 
     except Exception as e:
-        st.error("Could not connect to FastAPI server")
-        st.write(str(e))
+        st.error("API connection failed")
+        st.write(e)
